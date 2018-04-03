@@ -2,8 +2,9 @@
 
 
 import csv
+from emoji import UNICODE_EMOJI
 import numpy as np
-from sklearn import linear_model, datasets
+from sklearn import linear_model
 from sklearn.model_selection import KFold
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from sklearn.metrics import accuracy_score
@@ -12,8 +13,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 non_sarcastic_list = []
 sarcastic_list = []
 sentiment = []
-positive = False
-negative = False
+positive, negative = False, False
 inversions = []
 punctuation_count = []
 interjection_count = []
@@ -21,18 +21,26 @@ label = []
 negative_count = []
 positive_count = []
 features = []
-
+upperCase = []
+emoji = []
+accuracy = []
 
 interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', 'kidding', 'wtf']
+exclude = ['I', 'U.S']
+emojis = [':)', ';)', 'ðŸ¤”', 'ðŸ™ˆ', 'asÃ­', 'bla', 'es', 'se', 'ðŸ˜Œ', 'ds', 'ðŸ’•', 'ðŸ‘­', ':-)', ':p']
+
 j = -1
 
 sid = SentimentIntensityAnalyzer()
 ps = PorterStemmer()
 lemm = WordNetLemmatizer()
-with open('sarcasm_0_serious_1.csv', 'rU') as non_sarcasm:
-    nsreader = csv.reader(non_sarcasm, delimiter = ' ')
-    for i,line in enumerate(nsreader):
+
+with open('B:\\MyCodebase\\SarcasmDetection\\data\\sarcasm_0_serious_1.csv', 'rU', encoding='utf-8') as non_sarcasm:
+    nsreader = csv.reader(non_sarcasm, delimiter=' ')
+    for i, line in enumerate(nsreader):
         j += 1
+        emoji.append(0)
+        upperCase.append(0)
         inversions.append(0)
         interjection_count.append(0)
         punctuation_count.append(0)
@@ -40,53 +48,60 @@ with open('sarcasm_0_serious_1.csv', 'rU') as non_sarcasm:
         label.append(0)
         negative_count.append(0)
         positive_count.append(0)
-        
+
         label[j] = line[0][0]
         line[0] = line[0][2:]
-        
+
         for words in line:
-            
-            #print(words)
-            if(words.lower() in interjections):
+            # print(words)
+            if (words.isupper() and words not in exclude and words not in interjections):
+                upperCase[j] += 1
+                # print(words)
+            if (words in UNICODE_EMOJI or words in emojis):
+                emoji[j] += 1
+                # print(words)
+            if (words.lower() in interjections):
                 interjection_count[j] += 1
             punctuation_count[j] = punctuation_count[j] + words.count('!') + words.count('?')
             sentiment.append((words, sid.polarity_scores(words)))
             ss = sid.polarity_scores(words)
-            #print(words, ss)
-            if(ss["neg"] == 1.0):
+            # print(words, ss)
+            if (ss["neg"] == 1.0):
                 negative = True
                 negative_count[j] += 1
-                if(positive):
-                    inversions[j] += 1 
-                    #print(words)
+                if (positive):
+                    inversions[j] += 1
                     positive = False
-            elif(ss["pos"] == 1.0):
+            elif (ss["pos"] == 1.0):
                 positive = True
                 positive_count[j] += 1
-                if(negative):
+                if (negative):
                     inversions[j] += 1
-                    #print(words)
                     negative = False
-            #if(interjection_count[j] != 0):
-            
-            #print(line, inversions[j], punctuation_count[j], interjection_count[j])
+features_list = []
 
-features = np.asarray(zip(positive_count, negative_count, inversions, punctuation_count, interjection_count))
+for items in zip(positive_count, negative_count, inversions, punctuation_count,
+                          interjection_count, emoji):
+    features_list.append(items)
+
+features = np.asarray(features_list)
 label = np.asarray(label)
 
 print(features, label)
 
-k = KFold(n_splits = 10, shuffle = True)
+k = KFold(n_splits=10, shuffle=True)
 
 for train_idx, test_idx in k.split(features):
     features_train, features_test = features[train_idx], features[test_idx]
     label_train, label_test = label[train_idx], label[test_idx]
 
-logreg = linear_model.LogisticRegression(C=1e5)
+    logreg = linear_model.LogisticRegression(C=1e5)
 
-logreg.fit(features_train, label_train)
+    logreg.fit(features_train, label_train)
 
+    predict = logreg.predict(features_test)
 
-predict = logreg.predict(features_test)
+    print(accuracy_score(predict, label_test))
+    accuracy.append(accuracy_score(predict, label_test))
 
-print(accuracy_score(predict, label_test))
+print(float(sum(accuracy) / len(accuracy)))
