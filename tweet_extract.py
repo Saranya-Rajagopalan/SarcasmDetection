@@ -10,8 +10,8 @@ import os
 # Get the Twitter API authentication tokens from the developer.twitter.com website by creating a new application
 consumer_key = 'xxxx'
 consumer_secret = 'yyy'
-access_token = '833000616922275840-WO1yS6C7PLXMleC4DfbYjeNJLhQQCTI'
-access_token_secret = '70sHg54pAETIYwmTXncViHwyjRWNynmItUdZgVtwaFdRk'
+access_token = 'access_token'
+access_token_secret = 'access_token_secret'
 
 # Authenticate Tweepy api
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
