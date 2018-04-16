@@ -9,7 +9,6 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-
 negative_count = []
 positive_count = []
 sentiment = []
@@ -27,7 +26,6 @@ interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', '
                  'thanks to']
 exclude = ['I', 'U.S']
 emojis = [':)', ';)', 'ðŸ¤”', 'ðŸ™ˆ', 'asÃ­', 'bla', 'es', 'se', 'ðŸ˜Œ', 'ds', 'ðŸ’•', 'ðŸ‘­', ':-)', ':p']
-
 
 sid = SentimentIntensityAnalyzer()
 
@@ -70,9 +68,8 @@ with open('B:\\MyCodebase\\SarcasmDetection\\data\\sarcasm_0_serious_1.csv', 'rU
                     inversions[j] += 1
                     negative = False
 
-
 features_list = [x for x in zip(positive_count, negative_count, inversions, punctuation_count,
-                          interjection_count, emoji)]
+                                interjection_count, emoji)]
 
 features = np.asarray(features_list)
 label = np.asarray(label)
