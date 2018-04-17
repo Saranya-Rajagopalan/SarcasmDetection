@@ -74,8 +74,10 @@ with open(data_set_file_name, 'a') as csvfile:
 
 id_list = []
 
+normal_file = io.open(normal_file_name, 'r')
+
 tweet_id = 0
-for id in normal_file_name.readlines():
+for id in normal_file.readlines():
     if id != '\n':
         id_list.append(int(id))
 
@@ -94,8 +96,10 @@ for i in range(len(id_list)/400):
 
 id_list = []
 
+sarcastic_file = io.open(sarcastic_file_name, 'r')
+
 tweet_id = 0
-for id in sarcastic_file_name.readlines():
+for id in sarcastic_file.readlines():
     if id != '\n':
         id_list.append(int(id))
 
