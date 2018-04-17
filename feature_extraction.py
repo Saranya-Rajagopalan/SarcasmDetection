@@ -1,92 +1,116 @@
-# -*- coding: utf-8 -*-
+# Code to extract features from a given dataset(.csv file) and generate a feature list(.csv file)
 
+# Import required libraries
 
 import csv
 from emoji import UNICODE_EMOJI
 import numpy as np
-from sklearn import linear_model
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-negative_count = []
-positive_count = []
+# Variable Initiailization
+
+non_sarcastic_list = []
+sarcastic_list = []
 sentiment = []
+positive = False
+negative = False
 inversions = []
 punctuation_count = []
 interjection_count = []
+label = []
+negative_count = []
+positive_count = []
+features = []
 upperCase = []
 emoji = []
-features = []
-
-label = []
 accuracy = []
 
-interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', 'kidding', 'wtf', 'if only',
-                 'thanks to']
+# Reference Lists
+
+interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', 'kidding', 'wtf']
 exclude = ['I', 'U.S']
-emojis = [':)', ';)', 'ðŸ¤”', 'ðŸ™ˆ', 'asÃ­', 'bla', 'es', 'se', 'ðŸ˜Œ', 'ds', 'ðŸ’•', 'ðŸ‘­', ':-)', ':p']
+emojis = [':)', ';)', '🤔', '🙈', 'así','bla', 'es','se', '😌', 'ds', '💕','👭', ':-)',':p']
+
+j = -1
 
 sid = SentimentIntensityAnalyzer()
+ps = PorterStemmer()
+lemm = WordNetLemmatizer()
 
-with open('B:\\MyCodebase\\SarcasmDetection\\data\\sarcasm_0_serious_1.csv', 'rU', encoding='utf-8') as non_sarcasm:
-    nsreader = csv.reader(non_sarcasm, delimiter=' ')
-    positive, negative = False, False
-    for j, line in enumerate(nsreader):
+# Reads every tweet in the dataset.csv word by word and extracts features
+
+with open('dataset.csv', 'rU') as sarcasm:
+    nsreader = csv.reader(sarcasm, delimiter = ' ')
+    for i,line in enumerate(nsreader):
+        j += 1
+        
         emoji.append(0)
         upperCase.append(0)
         inversions.append(0)
         interjection_count.append(0)
         punctuation_count.append(0)
+        non_sarcastic_list.append(line)
         label.append(0)
         negative_count.append(0)
         positive_count.append(0)
-
+        
+        # Generate a separate list of labels
+        
         label[j] = line[0][0]
         line[0] = line[0][2:]
-
-        for words in line:
-            if (words.isupper() and words not in exclude and words not in interjections):
+              
+        for words in line: 
+            
+            # Feature - UpperCase word [which is not an interjection]
+            if(words.isupper() and words not in exclude and words not in interjections):
                 upperCase[j] += 1
-            if (words in UNICODE_EMOJI or words in emojis):
+                
+            # Feature - Emoji [Compared with a list of Unicodes and common emoticons]
+            if(words in UNICODE_EMOJI or words in emojis):
                 emoji[j] += 1
-            if (words.lower() in interjections):
+                
+            # Feature - Interjection ['Word' converted to lower case and compared with the list of common interjections]
+            if(words.lower() in interjections):
                 interjection_count[j] += 1
+                
+            # Feature - Punctuation [Includes punctuation which influence most sarcastic comments ('!' and '?')]
             punctuation_count[j] = punctuation_count[j] + words.count('!') + words.count('?')
+            
+            # Feature - Number of Positive / Negative words and change in Polarity 
             sentiment.append((words, sid.polarity_scores(words)))
             ss = sid.polarity_scores(words)
-            if (ss["neg"] == 1.0):
+            if(ss["neg"] == 1.0):
                 negative = True
                 negative_count[j] += 1
-                if (positive):
-                    inversions[j] += 1
+                if(positive):
+                    inversions[j] += 1 
                     positive = False
-            elif (ss["pos"] == 1.0):
+            elif(ss["pos"] == 1.0):
                 positive = True
                 positive_count[j] += 1
-                if (negative):
+                if(negative):
                     inversions[j] += 1
                     negative = False
 
-features_list = [x for x in zip(positive_count, negative_count, inversions, punctuation_count,
-                                interjection_count, emoji)]
+# Create a single list of lists with label and all the extracted features
+                    
+feature_label = np.asarray(zip(label, positive_count, negative_count, inversions, punctuation_count, upperCase,
+                          interjection_count, emoji))
 
-features = np.asarray(features_list)
-label = np.asarray(label)
+# Headers for the new feature list
 
-k = KFold(n_splits=10, shuffle=True)
+headers = ("label", "positive_count", "negative_count", "inversions", "punctuations", "upperCase", "interjections", "emoji")
 
-for train_idx, test_idx in k.split(features):
-    features_train, features_test = features[train_idx], features[test_idx]
-    label_train, label_test = label[train_idx], label[test_idx]
+# Writing headers to the new .csv file
 
-    logreg = linear_model.LogisticRegression(C=1e5)
-
-    logreg.fit(features_train, label_train)
-
-    predict = logreg.predict(features_test)
-
-    print(accuracy_score(predict, label_test))
-    accuracy.append(accuracy_score(predict, label_test))
-
-print(float(sum(accuracy) / len(accuracy)))
+with open("feature_list.csv", "w") as header:
+    header = csv.writer(header)
+    header.writerow(headers)
+    
+# Append the feature list to the file
+    
+with open("feature_list.csv", "ab") as feature_csv:
+    writer = csv.writer(feature_csv)
+    for line in feature_label:
+        writer.writerow(line)

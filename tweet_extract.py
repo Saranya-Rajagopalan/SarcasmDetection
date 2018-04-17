@@ -92,13 +92,10 @@ for i in range(len(id_list)/400):
 #  Extract tweets from the tweet ids of Sarcastic tweets
 ###########################################################################################
 
-with open(sarcastic_file_name, 'a') as csvfile:
-    csv.DictWriter(csvfile, fieldnames=headers).writeheader()
-
 id_list = []
 
 tweet_id = 0
-for id in normal_file_name.readlines():
+for id in sarcastic_file_name.readlines():
     if id != '\n':
         id_list.append(int(id))
 
