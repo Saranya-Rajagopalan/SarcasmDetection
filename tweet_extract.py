@@ -8,7 +8,7 @@ import twython
 import os
 
 # Get the Twitter API authentication tokens from the developer.twitter.com website by creating a new application
-consumer_key = 'xxxx'
+consumer_key = 'xxx'
 consumer_secret = 'yyy'
 access_token = 'access_token'
 access_token_secret = 'access_token_secret'
@@ -24,8 +24,8 @@ headers = ['INDEX', 'LABEL', 'TWEET']
 no_of_entries = 0
 
 # file names used
-normal_file_name = os.curdir+'\\data\\normal.txt', 'r'
-sarcastic_file_name = os.curdir+'\\data\\sarcastic.txt', 'r'
+normal_file_name = os.curdir+'\\data\\normal.txt'
+sarcastic_file_name = os.curdir+'\\data\\sarcastic.txt'
 data_set_file_name = 'dataset.csv'
 
 NORMAL_LABEL = 0
@@ -81,7 +81,7 @@ for id in normal_file.readlines():
     if id != '\n':
         id_list.append(int(id))
 
-for i in range(len(id_list)/400):
+for i in range(int(len(id_list)/400)):
     save_tweets_with_id(data_set_file_name, id_list[400 * i:(i + 1) * 400], NORMAL_LABEL)
     print(i)
     # Wait for 15 minutes before proceeding because Twitter API has request rate limit per
