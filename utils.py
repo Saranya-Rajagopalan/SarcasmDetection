@@ -1,7 +1,8 @@
 import os
 import csv
 
-def delete_column(csv_file_name, column_indices_to_remove = []):
+
+def delete_column(csv_file_name, column_indices_to_remove=[]):
     with open(csv_file_name, "r", encoding='utf8') as file_in:
         reader = csv.reader(file_in)
         with open('temp.csv', "w", encoding='utf8') as file_out:
@@ -22,4 +23,3 @@ def remove_newlines(file_name):
 
     os.remove(file_name)
     os.rename('temp.csv', file_name)
-

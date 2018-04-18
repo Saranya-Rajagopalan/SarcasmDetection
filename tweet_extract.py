@@ -31,6 +31,7 @@ data_set_file_name = 'dataset.csv'
 NORMAL_LABEL = 0
 SARCASM_LABEL = 1
 
+
 def save_tweets_with_hashtag(filename, hashtag_list=[]):
     tweetfile = io.open(filename, 'ab')
     for data in hashtag_list:
