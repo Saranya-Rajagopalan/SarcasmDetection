@@ -3,8 +3,8 @@
 # Import required libraries
 
 import csv
+import os
 from emoji import UNICODE_EMOJI
-import numpy as np
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -37,6 +37,8 @@ j = -1
 sid = SentimentIntensityAnalyzer()
 ps = PorterStemmer()
 lemm = WordNetLemmatizer()
+
+FEATURE_LIST_CSV_FILE_PATH = os.curdir + "\\data\\feature_list.csv"
 
 # Reads every tweet in the dataset.csv word by word and extracts features
 
@@ -104,13 +106,13 @@ headers = ["label", "positive_count", "negative_count", "inversions", "punctuati
 
 # Writing headers to the new .csv file
 
-with open("feature_list.csv", "w") as header:
+with open(FEATURE_LIST_CSV_FILE_PATH, "w") as header:
     header = csv.writer(header)
     header.writerow(headers)
     
 # Append the feature list to the file
     
-with open("feature_list.csv", "a") as feature_csv:
+with open(FEATURE_LIST_CSV_FILE_PATH, "a") as feature_csv:
     writer = csv.writer(feature_csv)
     for line in feature_label:
         writer.writerow(line)
