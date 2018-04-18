@@ -104,7 +104,7 @@ for id in sarcastic_file.readlines():
     if id != '\n':
         id_list.append(int(id))
 
-for i in range(len(id_list)/400):
+for i in range(int(len(id_list)/400)):
     save_tweets_with_id(data_set_file_name, id_list[400 * i:(i + 1) * 400], SARCASM_LABEL)
     print(i)
     # Wait for 15 minutes before proceeding because Twitter API has request rate limit per
