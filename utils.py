@@ -9,7 +9,21 @@ def delete_column(csv_file_name, column_indices_to_remove=[]):
             writer = csv.writer(file_out)
             for row in reader:
                 row = [row[i] for i in range(len(row)) if i not in column_indices_to_remove]
-                writer.writerow(row[1:3])
+                writer.writerow(row)
+    os.remove(csv_file_name)
+    os.rename('temp.csv', csv_file_name)
+
+
+def add_index(csv_file_name):
+    i = 0
+    with open(csv_file_name, "r", encoding='utf8') as file_in:
+        reader = csv.reader(file_in)
+        with open('temp.csv', "w", encoding='utf8') as file_out:
+            writer = csv.writer(file_out)
+            for row in reader:
+                i = i+1
+                row.insert(0, i)
+                writer.writerow(row)
     os.remove(csv_file_name)
     os.rename('temp.csv', csv_file_name)
 

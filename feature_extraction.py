@@ -28,7 +28,7 @@ accuracy = []
 
 # Reference Lists
 
-interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', 'kidding', 'wtf']
+interjections = ['wow', 'haha', 'lol', 'sarcasm', 'rofl', 'lmao', 'sarcastic', 'kidding', 'wtf', 'duh']
 exclude = ['I', 'U.S']
 emojis = [':)', ';)', '🤔', '🙈', 'así','bla', 'es','se', '😌', 'ds', '💕','👭', ':-)',':p', '(y)']
 
