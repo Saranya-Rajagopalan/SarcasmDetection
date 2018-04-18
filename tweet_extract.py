@@ -24,8 +24,8 @@ headers = ['INDEX', 'LABEL', 'TWEET']
 no_of_entries = 0
 
 # file names used
-normal_file_name = os.curdir + '\\data\\normal.txt'
-sarcastic_file_name = os.curdir + '\\data\\sarcastic.txt'
+normal_file_name = os.curdir + '\\data\\normal_tweet_id.txt'
+sarcastic_file_name = os.curdir + '\\data\\sarcastic_tweet_id.txt'
 data_set_file_name = 'dataset.csv'
 
 NORMAL_LABEL = 0
