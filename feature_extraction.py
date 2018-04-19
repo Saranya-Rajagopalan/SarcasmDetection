@@ -32,6 +32,8 @@ interjections = ['wow', 'haha', 'lol', 'rofl', 'lmao', 'kidding', 'wtf', 'duh']
 exclude = ['I', 'U.S']
 emojis = [':)', ';)', '🤔', '🙈', 'así','bla', 'es','se', '😌', 'ds', '💕','👭', ':-)',':p', '(y)']
 
+emoji_dict = {}
+
 j = -1
 
 sid = SentimentIntensityAnalyzer()
@@ -42,7 +44,7 @@ FEATURE_LIST_CSV_FILE_PATH = os.curdir + "\\data\\feature_list.csv"
 
 # Reads every tweet in the dataset.csv word by word and extracts features
 
-with open('normal.csv', 'rU', encoding='utf8') as fp:
+with open(os.curdir + '\\data\\dataset.csv', 'rU', encoding='utf8') as fp:
     nsreader = csv.reader(fp, delimiter = ',')
     for i, line in enumerate(nsreader):
         j += 1
@@ -58,8 +60,8 @@ with open('normal.csv', 'rU', encoding='utf8') as fp:
         
         # Generate a separate list of labels
         
-        label[j] = int(line[0])
-        tweet = line[1]
+        label[j] = int(line[1])
+        tweet = line[2]
               
         for words in tweet.split(' '):
             
@@ -69,6 +71,10 @@ with open('normal.csv', 'rU', encoding='utf8') as fp:
 
             # Feature - Emoji [Compared with a list of Unicodes and common emoticons]
             for e in list(UNICODE_EMOJI.keys()) + emojis:
+                if e in emoji_dict.keys():
+                    emoji_dict[e] + emoji_dict[e] + 1
+                else:
+                    emoji_dict.update({e: 1})
                 emoji[j] += words.count(e)
 
             # Feature - Interjection ['Word' converted to lower case and compared with the list of common interjections]
