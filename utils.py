@@ -37,3 +37,9 @@ def remove_newlines(file_name):
 
     os.remove(file_name)
     os.rename('temp.csv', file_name)
+
+
+delete_column(os.curdir + "\\data\\dataset.csv", [0])
+remove_newlines(os.curdir + "\\data\\dataset.csv")
+add_index(os.curdir + "\\data\\dataset.csv")
+remove_newlines(os.curdir + "\\data\\dataset.csv")
