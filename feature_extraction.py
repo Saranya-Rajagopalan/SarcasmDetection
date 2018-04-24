@@ -57,18 +57,12 @@ def hashtag_sentiment(tweet):
    hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
    hashtag_polarity = []
    for hashtag in hash_tag:
-       polarity = 0
        tokens = (seg.segment(hashtag))
-       for words in tokens:
-           ss = sid.polarity_scores(words)
-           if(ss["neg"] == 1.0):
-               polarity -= 1
-           elif(ss["pos"] == 1.0):
-               polarity += 1
-       if(polarity > 0):
-           hashtag_polarity.append(polarity>0)
-       elif(polarity < 0):
-           hashtag_polarity.append(0)
+       ss = sid.polarity_scores(tokens)
+       if 'not' not in tokens.split(' '):
+           hashtag_polarity.append(ss['compound'])
+       else:
+           hashtag_polarity.append(- ss['compound'])
    sentiment = 0
    if len(hashtag_polarity) > 0:
        sentiment = round(float(sum(hashtag_polarity)/float(len(hashtag_polarity))), 2)
@@ -273,12 +267,13 @@ def main():
     unigrams_count = []
     passive_aggressive_count = []
     emoji_tweet_flip = []
+    hashtag_sentiment_score = []
 
     COMMON_UNIGRAMS = find_common_unigrams(data_set)
     print(COMMON_UNIGRAMS)
 
     for t in tweets:
-        print(t, hashtag_sentiment(t))
+        hashtag_sentiment_score.append(hashtag_sentiment(t))
         tokens = clean_data(t)
         user_mention_count.append(user_mentions(t))
         p = punctuations_counter(t, ['!', '?', '...'])
@@ -305,7 +300,7 @@ def main():
         skip_grams_sentiment.append(skip_grams(tokens, 2, 2))
         unigrams_count.append(unigrams_counter(tokens, COMMON_UNIGRAMS))
         passive_aggressive_count.append(passive_aggressive_counter(t))
-        if (sentimentscore[-1] < 0 and emoji_sentiment[-1] > 0) or (sentimentscore[-1] > 0 and emoji_sentiment[-1] <0 ):
+        if (sentimentscore[-1] < 0 and emoji_sentiment[-1] > 0) or (sentimentscore[-1] > 0 and emoji_sentiment[-1] < 0):
             emoji_tweet_flip.append(1)
         else:
             emoji_tweet_flip.append(0)
@@ -315,13 +310,14 @@ def main():
                         uppercase_count, repeatLetter_counts, sentimentscore, positive_word_count, negative_word_count,
                         polarityFlip_count, noun_count, verb_count, positive_intensifier_count,
                         negative_intensifier_count,
-                        skip_bigrams_sentiment, skip_trigrams_sentiment, skip_grams_sentiment, emoji_sentiment, passive_aggressive_count, emoji_tweet_flip)
+                        skip_bigrams_sentiment, skip_trigrams_sentiment, skip_grams_sentiment, emoji_sentiment, passive_aggressive_count,
+                        emoji_tweet_flip, hashtag_sentiment_score)
 
     # Headers for the new feature list
     headers = ["label", "User mention", "Exclamation", "Question mark", "Ellipsis" "Interjection", "UpperCase",
                "RepeatLetters", "SentimentScore", "positive word count", "negative word count", "polarity flip",
                "Nouns", "Verbs", "PositiveIntensifier", "NegativeIntensifier", "Bigrams", "Trigram", "Skipgrams",
-               "Emoji Sentiment", "Passive aggressive count", "Emoji_tweet_polarity flip"]
+               "Emoji Sentiment", "Passive aggressive count", "Emoji_tweet_polarity flip", "hashtag_polarity"]
 
     # Writing headers to the new .csv file
     with open(FEATURE_LIST_CSV_FILE_PATH, "w") as header:
