@@ -9,6 +9,7 @@ from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import constants
 import pandas as pd
+from ekphrasis.classes.segmenter import Segmenter
 
 sid = SentimentIntensityAnalyzer()
 ps = PorterStemmer()
@@ -20,22 +21,22 @@ stopwords = stopwords.words('english')
 
 
 def read_data(filename):
-    data = pd.read_csv(filename, header=None, encoding="utf-8", names = ["Index","Label","Tweet"])
-    data = data[data['Index']>76750]
+    data = pd.read_csv(filename, header=None, encoding="utf-8", names=["Index", "Label", "Tweet"])
+    # data = data[data["Index"] > 76750]
     return data
 
 
-def clean_data(tweet, lemmatize = True, remove_punctuations = True, remove_stop_words = False):
-   stopwords = nltk.corpus.stopwords.words('english')
-   lemm = nltk.stem.wordnet.WordNetLemmatizer()
-   tokens = nltk.word_tokenize(tweet)
-   if remove_punctuations:
-       tokens = [word for word in tokens if word not in string.punctuation]
-   if remove_stop_words:
+def clean_data(tweet, lemmatize=True, remove_punctuations=True, remove_stop_words=False):
+    stopwords = nltk.corpus.stopwords.words('english')
+    lemm = nltk.stem.wordnet.WordNetLemmatizer()
+    tokens = nltk.word_tokenize(tweet)
+    if remove_punctuations:
+        tokens = [word for word in tokens if word not in string.punctuation]
+    if remove_stop_words:
         tokens = [word for word in tokens if word.lower() not in stopwords]
-   if lemmatize:
+    if lemmatize:
         tokens = [lemm.lemmatize(word) for word in tokens]
-   return tokens
+    return tokens
 
 
 def user_mentions(tweet):
@@ -49,19 +50,45 @@ def punctuations_counter(tweet, punctuation_list):
     return punctuation_count
 
 
-emoji_dict = {}
+seg = Segmenter(corpus="english")
 
 
-def emoji_counter(tweet):
+def hashtag_sentiment(tweet):
+   hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
+   hashtag_polarity = []
+   for hashtag in hash_tag:
+       polarity = 0
+       tokens = (seg.segment(hashtag))
+       for words in tokens:
+           ss = sid.polarity_scores(words)
+           if(ss["neg"] == 1.0):
+               polarity -= 1
+           elif(ss["pos"] == 1.0):
+               polarity += 1
+       if(polarity > 0):
+           hashtag_polarity.append(polarity>0)
+       elif(polarity < 0):
+           hashtag_polarity.append(0)
+   sentiment = 0
+   if len(hashtag_polarity) > 0:
+       sentiment = round(float(sum(hashtag_polarity)/float(len(hashtag_polarity))), 2)
+   return sentiment
+
+
+def getEmojiSentiment(tweet):
     # Feature - Emoji [Compared with a list of Unicodes and common emoticons]
-    for e in list(UNICODE_EMOJI.keys()):
+    emoji_sentiment = 0
+    count = 0
+    # flipped = 0
+    for e in constants.emoji_sentiment.keys():
         if e in tweet:
-            if e in emoji_dict.keys():
-                emoji_dict[e] += 1
-            else:
-                emoji_dict.update({e : 1})
-    return emoji_dict
-
+            count += 0
+            emoji_sentiment += constants.emoji_sentiment[e]
+    if count > 0:
+        emoji_sentiment = round((float(emoji_sentiment) / float(count)), 2)
+    # if (emoji_sentiment < 1 and emoji_sentiment > 0):
+    #     flipped = 1
+    return emoji_sentiment #, flipped
 
 
 def interjections_counter(tweet):
@@ -115,37 +142,38 @@ def polarityFlip_counter(tokens):
 
 
 def POS_count(tokens):
-   #tokens = clean_data(tweet, lemmatize= False)
-   Tagged = nltk.pos_tag(tokens)
-   nouns = ['NN', 'NNS', 'NNP', 'NNPS']
-   verbs = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
-   noun_count, verb_count = 0, 0
-   no_words = len(tokens)
-   for i in range(0, len(Tagged)):
-       if Tagged[i][1] in nouns:
-           noun_count += 1
-       if Tagged[i][1] in verbs:
-           verb_count += 1
-   return round(float(noun_count) / float(no_words), 2) , round(float(verb_count) / float(no_words), 2)
+    # tokens = clean_data(tweet, lemmatize= False)
+    Tagged = nltk.pos_tag(tokens)
+    nouns = ['NN', 'NNS', 'NNP', 'NNPS']
+    verbs = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
+    noun_count, verb_count = 0, 0
+    no_words = len(tokens)
+    for i in range(0, len(Tagged)):
+        if Tagged[i][1] in nouns:
+            noun_count += 1
+        if Tagged[i][1] in verbs:
+            verb_count += 1
+    return round(float(noun_count) / float(no_words), 2), round(float(verb_count) / float(no_words), 2)
 
 
 def intensifier_counter(tokens):
-    #tweet = clean_data(tweet, lemmatize= False)
+    # tweet = clean_data(tweet, lemmatize= False)
     posC, negC = 0, 0
     for index in range(len(tokens)):
         if tokens[index] in constants.intensifier_list:
-            ss_in = sid.polarity_scores(tokens[index+1])
-            if (ss_in["neg"] == 1.0):
-                negC += 1
-            if (ss_in["pos"] == 1.0):
-                posC += 1
+            if (index < len(tokens) - 1):
+                ss_in = sid.polarity_scores(tokens[index + 1])
+                if (ss_in["neg"] == 1.0):
+                    negC += 1
+                if (ss_in["pos"] == 1.0):
+                    posC += 1
     return posC, negC
 
 
 def skip_grams(tokens, n, k):
     skip_gram_value = 0
-    #tokens = clean_data(tweet, lemmatize= False)
-    a =  [x for x in nltk.skipgrams(tokens, n, k)]
+    # tokens = clean_data(tweet, lemmatize= False)
+    a = [x for x in nltk.skipgrams(tokens, n, k)]
     for j in range(len(a)):
         for k in range(n):
             ss = sid.polarity_scores(a[j][k])
@@ -161,33 +189,50 @@ def find_common_unigrams(data_set):
     unigram_non_sarcastic_dict = {}
     sarcastic_unigram_list = []
     non_sarcastic_unigram_list = []
-    print(data_set)
     tweets = data_set['Tweet'].values
-
     labels = data_set['Label'].values
-    for i,tweet in enumerate(tweets):
-        tokens = clean_data(tweet)
+    for i, tweet in enumerate(tweets):
+        tokens = clean_data(tweet, lemmatize=True, remove_punctuations=True, remove_stop_words=True)
         for words in tokens:
-            if words in unigram_sarcastic_dict.keys() and labels[i] == 1:
+            if words in unigram_sarcastic_dict.keys() and int(labels[i]) == 1:
                 unigram_sarcastic_dict[words] += 1
             else:
                 unigram_sarcastic_dict.update({words: 1})
-            if words in unigram_non_sarcastic_dict.keys() and labels[i] == 0:
+            if words in unigram_non_sarcastic_dict.keys() and int(labels[i]) == 0:
                 unigram_non_sarcastic_dict[words] += 1
             else:
                 unigram_non_sarcastic_dict.update({words: 1})
-
 
     # Creat list of high frequency unigrams
     # change value > 'x' where x is the frequency threshold
 
     for key, value in unigram_sarcastic_dict.items():
-        if value > 1 and key not in stopwords:
+        if value > 1000 and key not in stopwords:
             sarcastic_unigram_list.append(key)
     for key, value in unigram_non_sarcastic_dict.items():
-        if value > 1 and key not in stopwords:
+        if value > 1000 and key not in stopwords:
             non_sarcastic_unigram_list.append(key)
     return sarcastic_unigram_list, non_sarcastic_unigram_list
+
+
+def passive_aggressive_counter(tweet):
+    sentence_count = 0
+    new_sentence = []
+    i = 0
+    for j in range(len(tweet)):
+        if '.' != tweet[j]:
+            i += 1
+            new_sentence.append(tweet[j])
+        else:
+            sentence_count += 1
+            makeitastring = ''.join(map(str, new_sentence))
+            tokens = (nltk.word_tokenize(makeitastring))
+            if (len(tokens) > 3):
+                return 0
+            if (i == len(tweet)):
+                return 0
+            new_sentence = []
+    return sentence_count
 
 
 # Returns # most common unigrams from non sarcastic tweets which are also present in current tweet
@@ -198,90 +243,97 @@ def unigrams_counter(tokens, common_unigrams):
             if word in common_unigrams_count.keys():
                 common_unigrams_count[word] += 1
             else:
-                common_unigrams_count.update({word : 1})
+                common_unigrams_count.update({word: 1})
     return common_unigrams_count
 
 
 def main():
     data_set = read_data(DATASET_FILE_PATH)
-    print(data_set)
     label = list(data_set['Label'].values)
     tweets = list(data_set['Tweet'].values)
-    for t in tweets:
-        emoji_counter(t)
-    print(emoji_dict)
-    # user_mention_count = []
-    # exclamation_count = []
-    # questionmark_count = []
-    # emoji_count = []
-    # interjection_count = []
-    # uppercase_count = []
-    # repeatLetter_counts = []
-    # sentimentscore = []
-    # positive_word_count = []
-    # negative_word_count = []
-    # polarityFlip_count = []
-    # noun_count = []
-    # verb_count = []
-    # positive_intensifier_count = []
-    # negative_intensifier_count = []
-    # skip_bigrams_sentiment = []
-    # skip_trigrams_sentiment = []
-    # skip_grams_sentiment = []
-    # unigrams_count = []
-    #
+    user_mention_count = []
+    exclamation_count = []
+    questionmark_count = []
+    ellipsis_count = []
+    emoji_sentiment = []
+    interjection_count = []
+    uppercase_count = []
+    repeatLetter_counts = []
+    sentimentscore = []
+    positive_word_count = []
+    negative_word_count = []
+    polarityFlip_count = []
+    noun_count = []
+    verb_count = []
+    positive_intensifier_count = []
+    negative_intensifier_count = []
+    skip_bigrams_sentiment = []
+    skip_trigrams_sentiment = []
+    skip_grams_sentiment = []
+    unigrams_count = []
+    passive_aggressive_count = []
+    emoji_tweet_flip = []
+
     COMMON_UNIGRAMS = find_common_unigrams(data_set)
     print(COMMON_UNIGRAMS)
-    #
-    # for t in tweets:
-    #     tokens = clean_data(t)
-    #     user_mention_count.append(user_mentions(t))
-    #     p = punctuations_counter(t, ['!', '?'])
-    #     exclamation_count.append(p['!'])
-    #     questionmark_count.append(p['?'])
-    #     # emoji_count.append(emoji_counter(t))
-    #     interjection_count.append(interjections_counter(t))
-    #     uppercase_count.append(captitalWords_counter(tokens))
-    #     repeatLetter_counts.append(repeatLetterWords_counter(t))
-    #     sentimentscore.append(getSentimentScore(t))
-    #     x = polarityFlip_counter(tokens)
-    #     positive_word_count.append(x[0])
-    #     negative_word_count.append(x[1])
-    #     polarityFlip_count.append(x[-1])
-    #     x = POS_count(tokens)
-    #     noun_count.append(x[0])
-    #     verb_count.append(x[1])
-    #     x = intensifier_counter(tokens)
-    #     positive_intensifier_count.append(x[0])
-    #     negative_intensifier_count.append(x[1])
-    #     skip_bigrams_sentiment.append(skip_grams(tokens, 2, 0))
-    #     skip_trigrams_sentiment.append(skip_grams(tokens, 3, 0))
-    #     skip_grams_sentiment.append(skip_grams(tokens, 2, 2))
-    #     unigrams_count.append(unigrams_counter(tokens, COMMON_UNIGRAMS))
 
+    for t in tweets:
+        print(t, hashtag_sentiment(t))
+        tokens = clean_data(t)
+        user_mention_count.append(user_mentions(t))
+        p = punctuations_counter(t, ['!', '?', '...'])
+        exclamation_count.append(p['!'])
+        questionmark_count.append(p['?'])
+        ellipsis_count.append(p['...'])
+        interjection_count.append(interjections_counter(t))
+        uppercase_count.append(captitalWords_counter(tokens))
+        repeatLetter_counts.append(repeatLetterWords_counter(t))
+        sentimentscore.append(getSentimentScore(t))
+        x = polarityFlip_counter(tokens)
+        positive_word_count.append(x[0])
+        negative_word_count.append(x[1])
+        polarityFlip_count.append(x[-1])
+        x = POS_count(tokens)
+        noun_count.append(x[0])
+        verb_count.append(x[1])
+        x = intensifier_counter(tokens)
+        emoji_sentiment.append(getEmojiSentiment(t))
+        positive_intensifier_count.append(x[0])
+        negative_intensifier_count.append(x[1])
+        skip_bigrams_sentiment.append(skip_grams(tokens, 2, 0))
+        skip_trigrams_sentiment.append(skip_grams(tokens, 3, 0))
+        skip_grams_sentiment.append(skip_grams(tokens, 2, 2))
+        unigrams_count.append(unigrams_counter(tokens, COMMON_UNIGRAMS))
+        passive_aggressive_count.append(passive_aggressive_counter(t))
+        if (sentimentscore[-1] < 0 and emoji_sentiment[-1] > 0) or (sentimentscore[-1] > 0 and emoji_sentiment[-1] <0 ):
+            emoji_tweet_flip.append(1)
+        else:
+            emoji_tweet_flip.append(0)
 
-    # feature_label = zip(label, user_mention_count, exclamation_count, questionmark_count, interjection_count,
-    #                     uppercase_count, repeatLetter_counts, sentimentscore, positive_word_count, negative_word_count,
-    #                     polarityFlip_count, noun_count, verb_count, positive_intensifier_count, negative_intensifier_count,
-    #                     skip_bigrams_sentiment, skip_trigrams_sentiment, skip_grams_sentiment)
-    #
-    # # Headers for the new feature list
-    # headers = ["label", "User mention", "Exclamation", "Question mark", "Interjection", "UpperCase", "RepeatLetters",
-    #            "SentimentScore", "positive word count", "negative word count", "polarity flip", "Nouns", "Verbs",
-    #            "PositiveIntensifier", "NegativeIntensifier", "Bigrams", "Trigram", "Skipgrams"]
-    #
-    # # Writing headers to the new .csv file
-    # with open(FEATURE_LIST_CSV_FILE_PATH, "w") as header:
-    #     header = csv.writer(header)
-    #     header.writerow(headers)
-    #
-    # # Append the feature list to the file
-    # with open(FEATURE_LIST_CSV_FILE_PATH, "a") as feature_csv:
-    #     writer = csv.writer(feature_csv)
-    #     for line in feature_label:
-    #         writer.writerow(line)
+    feature_label = zip(label, user_mention_count, exclamation_count, questionmark_count, ellipsis_count,
+                        interjection_count,
+                        uppercase_count, repeatLetter_counts, sentimentscore, positive_word_count, negative_word_count,
+                        polarityFlip_count, noun_count, verb_count, positive_intensifier_count,
+                        negative_intensifier_count,
+                        skip_bigrams_sentiment, skip_trigrams_sentiment, skip_grams_sentiment, emoji_sentiment, passive_aggressive_count, emoji_tweet_flip)
+
+    # Headers for the new feature list
+    headers = ["label", "User mention", "Exclamation", "Question mark", "Ellipsis" "Interjection", "UpperCase",
+               "RepeatLetters", "SentimentScore", "positive word count", "negative word count", "polarity flip",
+               "Nouns", "Verbs", "PositiveIntensifier", "NegativeIntensifier", "Bigrams", "Trigram", "Skipgrams",
+               "Emoji Sentiment", "Passive aggressive count", "Emoji_tweet_polarity flip"]
+
+    # Writing headers to the new .csv file
+    with open(FEATURE_LIST_CSV_FILE_PATH, "w") as header:
+        header = csv.writer(header)
+        header.writerow(headers)
+
+    # Append the feature list to the file
+    with open(FEATURE_LIST_CSV_FILE_PATH, "a") as feature_csv:
+        writer = csv.writer(feature_csv)
+        for line in feature_label:
+            writer.writerow(line)
 
 
 if __name__ == "__main__":
     main()
-
