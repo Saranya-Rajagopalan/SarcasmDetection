@@ -3,11 +3,11 @@ import os
 import re
 import nltk
 import string
-from emoji import UNICODE_EMOJI
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import constants
+import numpy as np
 import pandas as pd
 from ekphrasis.classes.segmenter import Segmenter
 
@@ -50,23 +50,21 @@ def punctuations_counter(tweet, punctuation_list):
     return punctuation_count
 
 
-seg = Segmenter(corpus="english")
-
-
-def hashtag_sentiment(tweet):
-   hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
-   hashtag_polarity = []
-   for hashtag in hash_tag:
-       tokens = (seg.segment(hashtag))
-       ss = sid.polarity_scores(tokens)
-       if 'not' not in tokens.split(' '):
-           hashtag_polarity.append(ss['compound'])
-       else:
-           hashtag_polarity.append(- ss['compound'])
-   sentiment = 0
-   if len(hashtag_polarity) > 0:
-       sentiment = round(float(sum(hashtag_polarity)/float(len(hashtag_polarity))), 2)
-   return sentiment
+# def hashtag_sentiment(tweet):
+#     hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
+#     seg = Segmenter(corpus="english")
+#     hashtag_polarity = []
+#     for hashtag in hash_tag:
+#         tokens = (seg.segment(hashtag))
+#         ss = sid.polarity_scores(tokens)
+#         if 'not' not in tokens.split(' '):
+#             hashtag_polarity.append(ss['compound'])
+#         else:
+#             hashtag_polarity.append(- ss['compound'])
+#     sentiment = 0
+#     if len(hashtag_polarity) > 0:
+#         sentiment = round(float(sum(hashtag_polarity) / float(len(hashtag_polarity))), 2)
+#     return sentiment
 
 
 def getEmojiSentiment(tweet):
@@ -79,10 +77,8 @@ def getEmojiSentiment(tweet):
             count += 0
             emoji_sentiment += constants.emoji_sentiment[e]
     if count > 0:
-        emoji_sentiment = round((float(emoji_sentiment) / float(count)), 2)
-    # if (emoji_sentiment < 1 and emoji_sentiment > 0):
-    #     flipped = 1
-    return emoji_sentiment #, flipped
+        emoji_sentiment = (float(emoji_sentiment) / float(count))
+    return emoji_sentiment
 
 
 def interjections_counter(tweet):
@@ -147,7 +143,7 @@ def POS_count(tokens):
             noun_count += 1
         if Tagged[i][1] in verbs:
             verb_count += 1
-    return round(float(noun_count) / float(no_words), 2), round(float(verb_count) / float(no_words), 2)
+    return round(float(noun_count)73 / float(no_words),2), round(float(verb_count) / float(no_words),2)
 
 
 def intensifier_counter(tokens):
@@ -241,6 +237,18 @@ def unigrams_counter(tokens, common_unigrams):
     return common_unigrams_count
 
 
+def normalize( array):
+    max = np.max(array)
+    min = np.min(array)
+
+
+    def normalize(x):
+        return round(((x-min) / (max-min)),2)
+    if max != 0:
+        array = [x for x in map(normalize, array)]
+    return array
+
+
 def main():
     data_set = read_data(DATASET_FILE_PATH)
     label = list(data_set['Label'].values)
@@ -273,7 +281,7 @@ def main():
     print(COMMON_UNIGRAMS)
 
     for t in tweets:
-        hashtag_sentiment_score.append(hashtag_sentiment(t))
+        hashtag_sentiment_score.append(0)
         tokens = clean_data(t)
         user_mention_count.append(user_mentions(t))
         p = punctuations_counter(t, ['!', '?', '...'])
@@ -305,13 +313,14 @@ def main():
         else:
             emoji_tweet_flip.append(0)
 
-    feature_label = zip(label, user_mention_count, exclamation_count, questionmark_count, ellipsis_count,
-                        interjection_count,
-                        uppercase_count, repeatLetter_counts, sentimentscore, positive_word_count, negative_word_count,
-                        polarityFlip_count, noun_count, verb_count, positive_intensifier_count,
-                        negative_intensifier_count,
-                        skip_bigrams_sentiment, skip_trigrams_sentiment, skip_grams_sentiment, emoji_sentiment, passive_aggressive_count,
-                        emoji_tweet_flip, hashtag_sentiment_score)
+    feature_label = zip(label, normalize(user_mention_count), normalize(exclamation_count),
+                        normalize(questionmark_count), normalize(ellipsis_count), normalize(interjection_count),
+                        normalize(uppercase_count), normalize(repeatLetter_counts), sentimentscore,
+                        normalize(positive_word_count), normalize(negative_word_count), normalize(polarityFlip_count),
+                        noun_count, verb_count, normalize(positive_intensifier_count),
+                        normalize(negative_intensifier_count), skip_bigrams_sentiment, skip_trigrams_sentiment,
+                        skip_grams_sentiment, emoji_sentiment, normalize(passive_aggressive_count), emoji_tweet_flip,
+                        hashtag_sentiment_score)
 
     # Headers for the new feature list
     headers = ["label", "User mention", "Exclamation", "Question mark", "Ellipsis" "Interjection", "UpperCase",
