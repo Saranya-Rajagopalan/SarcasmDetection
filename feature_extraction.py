@@ -50,35 +50,38 @@ def punctuations_counter(tweet, punctuation_list):
     return punctuation_count
 
 
-# def hashtag_sentiment(tweet):
-#     hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
-#     seg = Segmenter(corpus="english")
-#     hashtag_polarity = []
-#     for hashtag in hash_tag:
-#         tokens = (seg.segment(hashtag))
-#         ss = sid.polarity_scores(tokens)
-#         if 'not' not in tokens.split(' '):
-#             hashtag_polarity.append(ss['compound'])
-#         else:
-#             hashtag_polarity.append(- ss['compound'])
-#     sentiment = 0
-#     if len(hashtag_polarity) > 0:
-#         sentiment = round(float(sum(hashtag_polarity) / float(len(hashtag_polarity))), 2)
-#     return sentiment
+# seg = Segmenter(corpus="english")
 
 
-def getEmojiSentiment(tweet):
+def hashtag_sentiment(tweet):
+    hash_tag = (re.findall("#([a-zA-Z0-9]{1,25})", tweet))
+
+    hashtag_polarity = []
+    for hashtag in hash_tag:
+        tokens = (seg.segment(hashtag))
+        ss = sid.polarity_scores(tokens)
+        if 'not' not in tokens.split(' '):
+            hashtag_polarity.append(ss['compound'])
+        else:
+            hashtag_polarity.append(- ss['compound'])
+    sentiment = 0
+    if len(hashtag_polarity) > 0:
+        sentiment = round(float(sum(hashtag_polarity) / float(len(hashtag_polarity))), 2)
+    return sentiment
+
+
+def getEmojiSentiment(tweet, emoji_count_list = constants.popular_emoji):
     # Feature - Emoji [Compared with a list of Unicodes and common emoticons]
     emoji_sentiment = 0
-    count = 0
-    # flipped = 0
+    emoji_count_dict = dict(zip(emoji_count_list, np.zeros(len(emoji_count_list))))
     for e in constants.emoji_sentiment.keys():
         if e in tweet:
-            count += 0
+            if e in emoji_count_list:
+                emoji_count_dict.update({e: tweet.count(e)})
             emoji_sentiment += constants.emoji_sentiment[e]
-    if count > 0:
-        emoji_sentiment = (float(emoji_sentiment) / float(count))
-    return emoji_sentiment
+    if sum(emoji_count_dict.values()) > 0:
+        emoji_sentiment = (float(emoji_sentiment) / float(sum(emoji_count_dict.values())))
+    return emoji_sentiment, emoji_count_dict
 
 
 def interjections_counter(tweet):
@@ -143,7 +146,7 @@ def POS_count(tokens):
             noun_count += 1
         if Tagged[i][1] in verbs:
             verb_count += 1
-    return round(float(noun_count)73 / float(no_words),2), round(float(verb_count) / float(no_words),2)
+    return round(float(noun_count) / float(no_words),2), round(float(verb_count) / float(no_words),2)
 
 
 def intensifier_counter(tokens):
@@ -240,8 +243,6 @@ def unigrams_counter(tokens, common_unigrams):
 def normalize( array):
     max = np.max(array)
     min = np.min(array)
-
-
     def normalize(x):
         return round(((x-min) / (max-min)),2)
     if max != 0:
@@ -277,6 +278,7 @@ def main():
     emoji_tweet_flip = []
     hashtag_sentiment_score = []
 
+
     COMMON_UNIGRAMS = find_common_unigrams(data_set)
     print(COMMON_UNIGRAMS)
 
@@ -300,9 +302,10 @@ def main():
         noun_count.append(x[0])
         verb_count.append(x[1])
         x = intensifier_counter(tokens)
-        emoji_sentiment.append(getEmojiSentiment(t))
         positive_intensifier_count.append(x[0])
         negative_intensifier_count.append(x[1])
+        x = getEmojiSentiment(t)
+        emoji_sentiment.append(x[0])
         skip_bigrams_sentiment.append(skip_grams(tokens, 2, 0))
         skip_trigrams_sentiment.append(skip_grams(tokens, 3, 0))
         skip_grams_sentiment.append(skip_grams(tokens, 2, 2))
@@ -312,7 +315,6 @@ def main():
             emoji_tweet_flip.append(1)
         else:
             emoji_tweet_flip.append(0)
-
     feature_label = zip(label, normalize(user_mention_count), normalize(exclamation_count),
                         normalize(questionmark_count), normalize(ellipsis_count), normalize(interjection_count),
                         normalize(uppercase_count), normalize(repeatLetter_counts), sentimentscore,
@@ -323,7 +325,7 @@ def main():
                         hashtag_sentiment_score)
 
     # Headers for the new feature list
-    headers = ["label", "User mention", "Exclamation", "Question mark", "Ellipsis" "Interjection", "UpperCase",
+    headers = ["label", "User mention", "Exclamation", "Question mark", "Ellipsis", "Interjection", "UpperCase",
                "RepeatLetters", "SentimentScore", "positive word count", "negative word count", "polarity flip",
                "Nouns", "Verbs", "PositiveIntensifier", "NegativeIntensifier", "Bigrams", "Trigram", "Skipgrams",
                "Emoji Sentiment", "Passive aggressive count", "Emoji_tweet_polarity flip", "hashtag_polarity"]
@@ -334,7 +336,7 @@ def main():
         header.writerow(headers)
 
     # Append the feature list to the file
-    with open(FEATURE_LIST_CSV_FILE_PATH, "a") as feature_csv:
+    with open(FEATURE_LIST_CSV_FILE_PATH, "ab") as feature_csv:
         writer = csv.writer(feature_csv)
         for line in feature_label:
             writer.writerow(line)
