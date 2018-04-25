@@ -39,5 +39,5 @@ def remove_newlines(file_name):
     os.rename('temp.csv', file_name)
 
 
-delete_column(os.curdir + "\\data\\feature_list.csv", [0])
+# delete_column(os.curdir + "\\data\\feature_list.csv", [0])
 remove_newlines(os.curdir + "\\data\\feature_list.csv")

@@ -277,6 +277,7 @@ def main():
     passive_aggressive_count = []
     emoji_tweet_flip = []
     hashtag_sentiment_score = []
+    emoji_count_list = []
 
 
     COMMON_UNIGRAMS = find_common_unigrams(data_set)
@@ -305,6 +306,7 @@ def main():
         positive_intensifier_count.append(x[0])
         negative_intensifier_count.append(x[1])
         x = getEmojiSentiment(t)
+        emoji_count_list.append(x[1])
         emoji_sentiment.append(x[0])
         skip_bigrams_sentiment.append(skip_grams(tokens, 2, 0))
         skip_trigrams_sentiment.append(skip_grams(tokens, 3, 0))
@@ -336,7 +338,7 @@ def main():
         header.writerow(headers)
 
     # Append the feature list to the file
-    with open(FEATURE_LIST_CSV_FILE_PATH, "ab") as feature_csv:
+    with open(FEATURE_LIST_CSV_FILE_PATH, "a") as feature_csv:
         writer = csv.writer(feature_csv)
         for line in feature_label:
             writer.writerow(line)
