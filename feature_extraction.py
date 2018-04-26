@@ -208,24 +208,23 @@ def find_common_unigrams(data_set):
     return sarcastic_unigram_list, non_sarcastic_unigram_list
 
 
-def passive_aggressive_count(tweet): 
-   sentence_count = 0 
+def passive_aggressive_counter(tweet):
+   sentence_count = 0
    new_sentence = []
-   i = 0   
+   i = 0
    for j in range(len(tweet)):
        if '.' != tweet[j]:
            i += 1
            new_sentence.append(tweet[j])
-       else:         
-                      
+       else:
+
            makeitastring = ''.join(map(str, new_sentence))
            tokens = (nltk.word_tokenize(makeitastring))
-           if(len(tokens)<3 and len(tokens) >0 ):
+           if len(tokens)<3 and len(tokens) >0:
                sentence_count += 1
-           
-           if(i == len(tweet)):
-               return 0           
-           new_sentence = []          
+           if i == len(tweet):
+               return 0
+           new_sentence = []
    return sentence_count
 
 
