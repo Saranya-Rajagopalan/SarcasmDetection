@@ -78,7 +78,7 @@ def getEmojiSentiment(tweet, emoji_count_list = constants.popular_emoji):
         if e in tweet:
             if e in emoji_count_list:
                 emoji_count_dict.update({e: tweet.count(e)})
-            emoji_sentiment += constants.emoji_sentiment[e]
+            emoji_sentiment += constants.emoji_sentiment[e]*tweet.count(e)
     if sum(emoji_count_dict.values()) > 0:
         emoji_sentiment = (float(emoji_sentiment) / float(sum(emoji_count_dict.values())))
     return emoji_sentiment, emoji_count_dict
